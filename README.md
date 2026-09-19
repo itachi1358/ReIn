@@ -11,6 +11,17 @@ npm start                        # http://localhost:5173
 Open **http://localhost:5173** — not the file directly, and not VS Code Live Server.
 Only `server.js` answers `POST /api/analyze`.
 
+## Layout
+
+```
+public/index.html   the whole UI (static)
+api/analyze.js      Vercel function -> lib/analyze.js
+api/health.js       lets the page tell it is being served properly
+lib/analyze.js      the shared core: prompt assembly, Groq call, 429 retry
+prompt.md           the rubric; §10 defines the JSON contract
+server.js           local dev only, reproduces the Vercel routing
+```
+
 PDFs are converted to text in the browser by pdf.js, so the file itself never leaves the
 page — only the extracted text is sent. Scanned/image-only PDFs won't work; paste the text.
 Optionally paste a job description to score against it.
@@ -43,3 +54,28 @@ Models actually worth setting, measured on this rubric:
 
 Nothing on the free tier gives both a big budget and reliable JSON. If you need volume
 rather than one analysis a minute, Groq's Dev Tier is the only real fix.
+
+## Deploying to Vercel
+
+Zero-config: `public/` is served statically and `api/*.js` become functions. No build step.
+
+```bash
+npm i -g vercel
+vercel                                  # first run links the project
+vercel env add GROQ_API_KEY production  # paste the key when prompted
+vercel --prod
+```
+
+Or push to GitHub and import the repo at vercel.com/new — same result, plus deploys on
+every push. Either way set `GROQ_API_KEY` under **Settings → Environment Variables**;
+`.env` is gitignored and is never uploaded.
+
+`vercel.json` pins `maxDuration: 120` and ships `prompt.md` with the function via
+`includeFiles` (it is read at runtime, so file tracing alone would not include it).
+Hobby allows up to 300s; 120 covers a full run plus two rate-limit waits.
+
+Optional env vars on Vercel: `GROQ_MODEL`, `MAX_TOKENS`, `RETRIES` — same defaults as local.
+
+**Deploying makes the key reachable by anyone who finds the URL**, since there is no auth
+on `/api/analyze` — every visitor spends your Groq quota. Fine for a personal link;
+add auth or a rate limit before sharing it widely.
