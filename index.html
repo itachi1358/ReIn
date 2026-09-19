@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Résumé Intelligence</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>◈</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0b; --bg-2:#101012; --bg-3:#16161a; --line:#212125; --line-2:#2e2e34;
+  --fg:#ececee; --dim:#9a9aa4; --faint:#6a6a74;
+  --accent:#22d3ee; --accent-fg:#0a0a0b;
+  /* status palette — fixed, never themed. Every use carries its number + band label.
+     Keep these three off the accent hue: they encode data, the accent is only chrome. */
+  --good:#0ca30c; --warn:#fab219; --bad:#d03b3b;
+  --radius:16px; --ease:cubic-bezier(.22,1,.36,1);
+}
+@media (prefers-color-scheme:light){
+  :root{
+    --bg:#faf9f7; --bg-2:#fff; --bg-3:#f4f2ee; --line:#e6e3dd; --line-2:#d5d1c8;
+    --fg:#17171a; --dim:#6b6b73; --faint:#96969e;
+    --accent:#1f1f22; --accent-fg:#fff;
+  }
+}
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg); color:var(--fg);
+  font:400 15px/1.6 Inter,system-ui,sans-serif;
+  letter-spacing:-.005em; padding:0 24px 140px; -webkit-font-smoothing:antialiased;
+}
+body::before{
+  content:""; position:fixed; inset:0 0 auto; height:60vh; pointer-events:none; z-index:-1;
+  background:radial-gradient(60% 100% at 50% -10%, color-mix(in oklab,var(--accent) 12%,transparent), transparent 70%);
+}
+.wrap{max-width:780px;margin:0 auto}
+::selection{background:var(--accent);color:var(--accent-fg)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+@keyframes pop{from{opacity:0;transform:translateY(10px)}}
+@keyframes fill{from{--pct:0%}}
+@property --pct{syntax:"<percentage>";inherits:true;initial-value:0%}
+
+/* ── header ─────────────────────────────── */
+header{padding:96px 0 44px;text-align:center}
+h1{font:400 clamp(40px,7vw,62px)/1.02 "Instrument Serif",Georgia,serif;letter-spacing:-.02em}
+h1 em{font-style:italic;color:var(--accent)}
+@media (prefers-color-scheme:light){h1 em{color:var(--bad)}}
+.sub{color:var(--dim);margin-top:16px;max-width:44ch;margin-inline:auto;text-wrap:balance}
+
+/* ── input card ─────────────────────────── */
+#wrongport{display:none;margin:0 0 28px;padding:18px 20px;border-radius:12px;border:1px solid var(--bad);background:color-mix(in oklab,var(--bad) 12%,transparent);font-size:14px;line-height:1.6}
+#wrongport.on{display:block}
+#wrongport b{display:block;margin-bottom:6px}
+#wrongport code{font:400 13px "JetBrains Mono",monospace;background:color-mix(in oklab,var(--fg) 10%,transparent);padding:.15em .45em;border-radius:5px}
+#wrongport a{color:var(--bad);font-weight:600}
+
+.card{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);padding:8px;box-shadow:0 1px 2px rgba(0,0,0,.2),0 16px 48px -24px rgba(0,0,0,.5)}
+@media (prefers-color-scheme:light){.card{box-shadow:0 1px 2px rgba(0,0,0,.04),0 20px 48px -30px rgba(0,0,0,.25)}}
+#drop{border:1.5px dashed var(--line-2);border-radius:11px;padding:44px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s,transform .35s var(--ease)}
+#drop:hover{border-color:var(--faint);background:color-mix(in oklab,var(--fg) 3%,transparent)}
+#drop.over{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 8%,transparent);transform:scale(1.008)}
+#drop .glyph{font-size:22px;color:var(--faint);display:block;margin-bottom:12px}
+#drop b{font-weight:500}
+#drop small{display:block;margin-top:8px;color:var(--faint);font-size:12.5px}
+#drop .br{color:var(--faint);padding:0 4px}
+u{text-decoration-color:var(--faint);text-underline-offset:3px;cursor:pointer}
+#file{display:none;align-items:center;gap:12px;padding:18px 20px;border-radius:11px;background:color-mix(in oklab,var(--fg) 4%,transparent)}
+#file.on{display:flex}
+#file .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+#file .name{font:500 14px/1.3 "JetBrains Mono",monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#file .meta{color:var(--faint);font-size:12.5px;margin-left:auto;flex:none}
+#file button{background:none;border:0;color:var(--faint);cursor:pointer;font-size:18px;line-height:1;padding:4px;flex:none}
+#file button:hover{color:var(--fg)}
+textarea{width:100%;background:transparent;border:0;color:var(--fg);resize:vertical;font:400 14px/1.65 Inter,sans-serif;padding:18px 20px;min-height:132px}
+textarea::placeholder{color:var(--faint)}
+textarea:focus{outline:0}
+.pane{display:none;border-top:1px solid var(--line);margin-top:8px}
+.pane.on{display:block}
+
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.segs{display:flex;background:var(--bg-2);border:1px solid var(--line);border-radius:11px;padding:3px}
+.segs button{background:none;border:0;color:var(--dim);cursor:pointer;padding:8px 15px;border-radius:8px;font:500 13px Inter,sans-serif;transition:color .15s,background .15s}
+.segs button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg)}
+.ghost{background:var(--bg-2);border:1px solid var(--line);color:var(--dim);cursor:pointer;padding:9px 15px;border-radius:11px;font:500 13px Inter,sans-serif;transition:color .15s,border-color .15s}
+.ghost:hover{color:var(--fg);border-color:var(--line-2)}
+.ghost[aria-pressed=true]{color:var(--fg);border-color:var(--faint)}
+#go{margin-left:auto;background:var(--accent);color:var(--accent-fg);border:0;cursor:pointer;padding:11px 22px;border-radius:11px;font:600 13.5px Inter,sans-serif;transition:transform .15s var(--ease)}
+#go:hover:not(:disabled){transform:translateY(-1px)}
+#go:disabled{opacity:.35;cursor:not-allowed}
+#go kbd{font:inherit;opacity:.55;margin-left:8px}
+.err{color:var(--bad);font-size:13px;margin-top:12px;min-height:18px}
+#status{display:none;align-items:center;gap:12px;margin-top:40px;color:var(--dim);font-size:13.5px}
+#status.on{display:flex}
+.spin{width:13px;height:13px;border:1.5px solid var(--line-2);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+#clock{margin-left:auto;font:400 12.5px "JetBrains Mono",monospace;color:var(--faint);font-variant-numeric:tabular-nums}
+
+/* ── report ─────────────────────────────── */
+#out{display:none;margin-top:56px;width:min(1120px,calc(100vw - 48px));margin-left:50%;transform:translateX(-50%)}
+#out.on{display:block}
+#out>*{animation:pop .5s var(--ease) both}
+.sec{margin-top:72px}
+.sec>h2{
+  font:600 12px/1 Inter,sans-serif;text-transform:uppercase;letter-spacing:.14em;color:var(--faint);
+  padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:32px;
+  display:flex;align-items:center;gap:12px;
+}
+.sec>h2::after{content:attr(data-n);margin-left:auto;font-variant-numeric:tabular-nums;color:var(--line-2)}
+
+/* hero */
+.hero{display:grid;gap:22px}
+.hero .eyebrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hero .profile{font:400 clamp(38px,5.4vw,60px)/1.05 "Instrument Serif",Georgia,serif;letter-spacing:-.02em;text-wrap:balance}
+.hero .verdict{font-size:19px;line-height:1.62;color:var(--dim);max-width:62ch}
+.hero .assume{font-size:13px;color:var(--faint);border-left:2px solid var(--line-2);padding-left:14px;max-width:62ch}
+
+/* the one big number */
+.hero-figure{display:flex;align-items:center;gap:28px;padding:30px 32px;border-radius:var(--radius);background:var(--bg-2);border:1px solid var(--line);flex-wrap:wrap;margin-top:30px}
+.hero-figure .n{font:700 clamp(56px,9vw,84px)/.86 Inter,sans-serif;letter-spacing:-.045em;font-variant-numeric:tabular-nums}
+.hero-figure .of{font:500 17px Inter,sans-serif;color:var(--faint);align-self:flex-end;margin-left:-18px;margin-bottom:8px}
+.hero-figure .txt{flex:1 1 260px;min-width:0;display:grid;gap:12px}
+.hero-figure .txt b{font:600 13px Inter,sans-serif;text-transform:uppercase;letter-spacing:.1em;color:var(--faint)}
+
+/* meter: recessive track + a status-coloured fill, always beside a visible number */
+.meter{height:8px;border-radius:99px;background:color-mix(in oklab,var(--fg) 9%,transparent);overflow:hidden}
+.meter>i{display:block;height:100%;border-radius:99px;width:var(--pct);background:currentColor;animation:fill .9s var(--ease) both;animation-delay:inherit}
+
+/* scorecard: horizontal bars, direct-labelled */
+.bars{display:grid;gap:3px}
+.brow{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(90px,2fr) auto;gap:22px;align-items:center;padding:15px 16px;border-radius:11px;transition:background .15s}
+.brow:hover{background:var(--bg-2)}
+.brow .k{font:500 15px Inter,sans-serif}
+.brow .k small{display:block;font:400 12.5px/1.5 Inter,sans-serif;color:var(--faint);margin-top:3px}
+.brow .v{font:700 22px Inter,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.02em;text-align:right;min-width:52px}
+
+/* role cards */
+.roles{display:grid;gap:18px}
+.role{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);padding:28px 30px;transition:border-color .2s,transform .2s var(--ease)}
+.role:hover{border-color:var(--line-2);transform:translateY(-2px)}
+.role .top{display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap;margin-bottom:18px}
+.role .title{font:600 26px/1.2 Inter,sans-serif;letter-spacing:-.025em;flex:1 1 220px}
+.role .num{text-align:right}
+.role .num b{display:block;font:700 46px/.88 Inter,sans-serif;letter-spacing:-.045em;font-variant-numeric:tabular-nums}
+.role .num span{font:600 10.5px Inter,sans-serif;text-transform:uppercase;letter-spacing:.09em;color:var(--faint)}
+.role .why{color:var(--dim);margin:20px 0 22px;max-width:70ch;font-size:15.5px}
+.role .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:24px;padding-top:22px;border-top:1px solid var(--line)}
+.role .cols h4{font:600 10.5px Inter,sans-serif;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);margin-bottom:12px}
+.role .cols ul{list-style:none;display:grid;gap:8px;font-size:13.5px;line-height:1.5}
+.role .cols li{padding-left:15px;position:relative;color:var(--dim)}
+.role .cols li::before{content:"";position:absolute;left:0;top:.62em;width:5px;height:5px;border-radius:50%;background:var(--line-2)}
+
+/* skills: 0–5 dot meter */
+.skills{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:2px}
+.skill{display:flex;align-items:center;gap:16px;padding:13px 16px;border-radius:10px;transition:background .15s}
+.skill:hover{background:var(--bg-2)}
+.skill .n{flex:1;min-width:0}
+.skill .n b{font:500 14.5px Inter,sans-serif;display:block}
+.skill .n small{font-size:12px;color:var(--faint);display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dots{display:flex;gap:4px;flex:none}
+.dots i{width:9px;height:18px;border-radius:3px;background:color-mix(in oklab,var(--fg) 11%,transparent)}
+.dots i.on{background:currentColor}
+.skill .p{font:700 13px "JetBrains Mono",monospace;color:var(--faint);flex:none;width:22px;text-align:right}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:99px;border:1px solid currentColor;background:color-mix(in oklab,currentColor 13%,transparent);font:600 11.5px Inter,sans-serif;letter-spacing:.03em}
+.chip .ico{font-size:10px}
+.chip.plain{color:var(--dim);border-color:var(--line-2);background:var(--bg-2);font-weight:500}
+.chip.big{padding:8px 16px;font-size:12.5px}
+
+/* readiness grid */
+.ready{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.rcell{padding:16px 18px;border-radius:12px;background:var(--bg-2);border:1px solid var(--line)}
+.rcell b{display:block;font:600 14px Inter,sans-serif;margin-bottom:10px}
+
+/* improvements */
+.fixes{display:grid;gap:14px;counter-reset:f}
+.fix{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);padding:26px 28px;display:grid;grid-template-columns:auto 1fr;gap:0 24px}
+.fix::before{counter-increment:f;content:counter(f);font:700 30px/1 Inter,sans-serif;color:var(--line-2);font-variant-numeric:tabular-nums;grid-row:1/span 4}
+.fix h4{font:600 19px/1.3 Inter,sans-serif;letter-spacing:-.02em;margin-bottom:8px}
+.fix .why{color:var(--dim);font-size:14px;margin-bottom:16px}
+.fix .do{font:400 13.5px/1.7 "JetBrains Mono",monospace;background:var(--bg-3);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:9px;padding:15px 17px;white-space:pre-wrap;overflow-wrap:break-word}
+.fix .ben{font-size:12.5px;color:var(--good);margin-top:12px;font-weight:500}
+
+/* misc */
+.flags{display:grid;gap:10px}
+.flag{display:flex;gap:13px;align-items:flex-start;padding:15px 18px;border-radius:12px;background:color-mix(in oklab,var(--warn) 9%,transparent);border:1px solid color-mix(in oklab,var(--warn) 32%,transparent);font-size:14px;line-height:1.55}
+.flag .ico{color:var(--warn);flex:none;font-weight:700}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:32px;margin-top:32px}
+.two h4{font:600 10.5px Inter,sans-serif;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);margin-bottom:14px}
+.two ul{list-style:none;display:grid;gap:10px;font-size:14px;line-height:1.5;color:var(--dim)}
+.two li{padding-left:16px;position:relative}
+.two li::before{content:"";position:absolute;left:0;top:.6em;width:5px;height:5px;border-radius:50%;background:var(--line-2)}
+.good{color:var(--good)} .warnc{color:var(--warn)} .bad{color:var(--bad)} .neutral{color:var(--dim)}
+.outbar{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.outbar .ghost{margin-left:auto}
+.outbar .ghost+.ghost{margin-left:0}
+footer{text-align:center;color:var(--faint);font-size:12.5px;margin-top:90px}
+
+@media (max-width:640px){
+  header{padding:60px 0 32px}
+  #go{margin-left:0;width:100%}
+  .brow{grid-template-columns:1fr auto;gap:8px 16px}
+  .brow .meter{grid-column:1/-1}
+  .fix{grid-template-columns:1fr}
+  .fix::before{grid-row:auto;margin-bottom:6px}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:0s!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>What your résumé<br><em>actually</em> proves.</h1>
+  <p class="sub">Evidence-graded analysis, role matching and the shortest path to closing the gaps. No flattery.</p>
+</header>
+
+<div id="wrongport" role="alert">
+  <b>This page isn't being served by server.js.</b>
+  You opened it with Live Server or straight off disk, so <code>/api/analyze</code> doesn't exist here
+  and the POST comes back <code>405</code>. Stop Live Server, run <code>npm start</code>, then open
+  <a href="http://localhost:5173">http://localhost:5173</a>.
+</div>
+
+<main class="card">
+  <div id="drop" tabindex="0" role="button" aria-label="Upload résumé">
+    <span class="glyph">◈</span>
+    <b>Drop your résumé</b>
+    <small>PDF or plain text <span class="br">·</span> <u id="browse">browse</u> <span class="br">·</span> <u id="paste-link">paste text</u></small>
+  </div>
+  <div id="file">
+    <span class="dot"></span><span class="name"></span><span class="meta"></span>
+    <button id="clear" title="Remove" aria-label="Remove file">×</button>
+  </div>
+  <div class="pane" id="paste-pane"><textarea id="text" placeholder="Paste your résumé text here…" aria-label="Résumé text"></textarea></div>
+  <div class="pane" id="jd-pane"><textarea id="jd" placeholder="Paste a job description to score against it…" aria-label="Job description"></textarea></div>
+</main>
+
+<div class="bar">
+  <div class="segs" role="group" aria-label="Analysis depth">
+    <button data-mode="quick">Quick</button>
+    <button data-mode="standard" aria-pressed="true">Standard</button>
+    <button data-mode="deep">Deep</button>
+  </div>
+  <button class="ghost" id="jd-toggle" aria-pressed="false">+ Job description</button>
+  <button id="go" disabled>Analyse <kbd>⌘↵</kbd></button>
+</div>
+<p class="err" id="err" role="alert"></p>
+
+<div id="status">
+  <span class="spin"></span><span id="stage">Reading the document</span><span id="clock">0:00</span>
+</div>
+
+<section id="out"></section>
+
+<footer>Estimates resume alignment only — not interview or offer outcomes.</footer>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.3.289/";
+const MAX = 10 * 1024 * 1024;
+const state = { mode: "standard" };
+let loaded = false;
+
+const fileInput = Object.assign(document.createElement("input"), { type: "file", accept: ".pdf,.txt,.md" });
+document.body.append(fileInput);
+
+const err = (m) => { $("#err").textContent = m || ""; };
+const ready = () => $("#go").disabled = !$("#text").value.trim();
+
+/* ── pdf -> text, in the browser, so no binary leaves this page ── */
+let pdfjs;
+async function pdfToText(file) {
+  if (!pdfjs) {
+    pdfjs = await import(PDFJS + "pdf.min.mjs");
+    pdfjs.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.mjs";
+  }
+  const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+  const pages = [];
+  for (let n = 1; n <= doc.numPages; n++) {
+    const items = (await (await doc.getPage(n)).getTextContent()).items;
+    // ponytail: group spans by baseline y to rebuild lines. Good enough for one- and
+    // two-column resumes; a real layout engine only pays off for tables and figures.
+    const rows = new Map();
+    for (const it of items) {
+      if (!it.str.trim()) continue;
+      const y = Math.round(it.transform[5]);
+      (rows.get(y) ?? rows.set(y, []).get(y)).push(it);
+    }
+    pages.push([...rows.entries()].sort((a, b) => b[0] - a[0])
+      .map(([, r]) => r.sort((a, b) => a.transform[4] - b.transform[4]).map((i) => i.str).join(" ").replace(/\s+/g, " ").trim())
+      .join("\n"));
+  }
+  return pages.join("\n\n");
+}
+
+async function load(file) {
+  err("");
+  if (file.size > MAX) return err(`${file.name} is ${(file.size / 1048576).toFixed(1)}MB - 10MB max.`);
+  const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+  const isText = file.type.startsWith("text/") || /\.(txt|md)$/i.test(file.name);
+  if (!isPdf && !isText) {
+    return err(/\.(docx?|pages)$/i.test(file.name)
+      ? "Word files can't be read directly - export to PDF and drop that."
+      : "Unsupported file. Use a PDF or a .txt, or paste the text below.");
+  }
+  $("#file .name").textContent = file.name;
+  $("#file .meta").textContent = isPdf ? "reading…" : `${(file.size / 1024).toFixed(0)} KB`;
+  $("#drop").style.display = "none";
+  $("#file").classList.add("on");
+  loaded = true;
+  try {
+    const text = isPdf ? await pdfToText(file) : await file.text();
+    if (text.trim().length < 80) {
+      reset();
+      return err("Almost no text came out - that PDF is probably a scan. Paste the text instead.");
+    }
+    $("#text").value = text;
+    $("#file .meta").textContent = `${text.split(/\s+/).length} words`;
+  } catch (e) {
+    reset();
+    return err(`Could not read that file: ${e.message}`);
+  }
+  ready();
+}
+
+function reset() {
+  loaded = false;
+  $("#text").value = "";
+  $("#file").classList.remove("on");
+  $("#drop").style.display = "";
+  fileInput.value = "";
+  ready();
+}
+
+$("#drop").onclick = () => fileInput.click();
+$("#drop").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } };
+$("#browse").onclick = (e) => { e.stopPropagation(); fileInput.click(); };
+$("#paste-link").onclick = (e) => { e.stopPropagation(); $("#paste-pane").classList.add("on"); $("#text").focus(); };
+$("#clear").onclick = reset;
+fileInput.onchange = () => fileInput.files[0] && load(fileInput.files[0]);
+$("#text").oninput = () => { if (loaded) { loaded = false; $("#file").classList.remove("on"); $("#drop").style.display = ""; } ready(); };
+
+let depth = 0;
+addEventListener("dragenter", (e) => { e.preventDefault(); if (++depth) $("#drop").classList.add("over"); });
+addEventListener("dragover", (e) => e.preventDefault());
+addEventListener("dragleave", () => { if (--depth <= 0) { depth = 0; $("#drop").classList.remove("over"); } });
+addEventListener("drop", (e) => { e.preventDefault(); depth = 0; $("#drop").classList.remove("over"); if (e.dataTransfer.files[0]) load(e.dataTransfer.files[0]); });
+
+$(".segs").onclick = (e) => {
+  const b = e.target.closest("button[data-mode]"); if (!b) return;
+  state.mode = b.dataset.mode;
+  for (const x of $(".segs").children) x.setAttribute("aria-pressed", x === b);
+};
+$("#jd-toggle").onclick = (e) => {
+  const on = $("#jd-pane").classList.toggle("on");
+  e.currentTarget.setAttribute("aria-pressed", on);
+  if (on) $("#jd").focus();
+};
+
+/* ── run ────────────────────────────────── */
+const STAGES = ["Reading the document", "Extracting evidence", "Grading skills against evidence",
+  "Analysing experience & projects", "Matching roles", "Running gap analysis", "Writing recommendations"];
+
+$("#go").onclick = run;
+addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !$("#go").disabled) run(); });
+
+fetch("/api/health").then((r) => { if (!r.ok) throw 0; })
+  .catch(() => { $("#wrongport").classList.add("on"); $("#go").disabled = true; });
+
+async function run() {
+  err("");
+  $("#go").disabled = true;
+  $("#status").classList.add("on");
+  $("#out").classList.remove("on");
+
+  const t0 = Date.now();
+  const tick = setInterval(() => {
+    const s = (Date.now() - t0) / 1000;
+    $("#clock").textContent = `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+    $("#stage").textContent = STAGES[Math.min(STAGES.length - 1, Math.floor(s / 7))];
+  }, 250);
+
+  try {
+    const res = await fetch("/api/analyze", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ mode: state.mode, text: $("#text").value, jd: $("#jd-pane").classList.contains("on") ? $("#jd").value : "" }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+
+    let raw = "";
+    const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      raw += value;
+    }
+    // A stray fence or preamble shouldn't cost the whole run — take the outermost object.
+    const a = raw.indexOf("{"), b = raw.lastIndexOf("}");
+    if (a < 0 || b < a) throw new Error("The model didn't return JSON. Try again, or set GROQ_MODEL to another model.");
+    draw(JSON.parse(raw.slice(a, b + 1)));
+    $("#out").classList.add("on");
+    $("#out").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    err(e.message || "Something went wrong.");
+  } finally {
+    clearInterval(tick);
+    $("#status").classList.remove("on");
+    $("#go").disabled = false;
+  }
+}
+
+/* ── render ─────────────────────────────── */
+// Score -> status band. Thresholds are §7's own interpretation scale.
+const band = (n) => n >= 80 ? "good" : n >= 60 ? "warnc" : "bad";
+const word = (n) => n >= 90 ? "Exceptional" : n >= 80 ? "Strong" : n >= 70 ? "Good" : n >= 60 ? "Partial" : n >= 50 ? "Weak" : "Low";
+const LEVEL = { Strong: ["good", "●●●"], Moderate: ["warnc", "●●○"], Limited: ["bad", "●○○"], None: ["neutral", "○○○"] };
+const REQ = { MATCH: ["good", "✓"], PARTIAL: ["warnc", "~"], MISSING: ["bad", "✕"], UNCLEAR: ["neutral", "?"] };
+const num = (n) => Math.round(Number(n) || 0);
+
+// Model output is inserted as text, never as markup.
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+function meter(pct, delay = 0) {
+  const m = el("div", "meter");
+  const i = el("i");
+  i.style.setProperty("--pct", Math.max(0, Math.min(100, pct)) + "%");
+  i.style.animationDelay = delay + "ms";
+  m.append(i);
+  m.setAttribute("role", "img");
+  m.setAttribute("aria-label", num(pct) + " out of 100");
+  return m;
+}
+function list(items) {
+  const ul = el("ul");
+  for (const t of items) ul.append(el("li", null, t));
+  return ul;
+}
+function section(title, count) {
+  const s = el("section", "sec");
+  const h = el("h2", null, title);
+  if (count != null) h.dataset.n = count;
+  s.append(h);
+  return s;
+}
+function columns(pairs) {
+  const two = el("div", "two");
+  for (const [h, items] of pairs) {
+    if (!items?.length) continue;
+    const col = el("div");
+    col.append(el("h4", null, h), list(items));
+    two.append(col);
+  }
+  return two;
+}
+function figure(score, label, note) {
+  const f = el("div", "hero-figure " + band(score));
+  f.append(el("div", "n", num(score)), el("div", "of", "/100"));
+  const t = el("div", "txt");
+  t.append(el("b", null, label + " — " + word(score)), meter(score, 150));
+  if (note) t.append(el("p", "assume", note));
+  f.append(t);
+  return f;
+}
+
+function draw(d) {
+  const out = $("#out");
+  out.replaceChildren();
+
+  const tb = el("div", "outbar");
+  const copy = el("button", "ghost", "Copy JSON");
+  copy.onclick = async () => {
+    await navigator.clipboard.writeText(JSON.stringify(d, null, 2));
+    copy.textContent = "Copied"; setTimeout(() => copy.textContent = "Copy JSON", 1400);
+  };
+  const save = el("button", "ghost", "Download");
+  save.onclick = () => {
+    const a = Object.assign(document.createElement("a"), {
+      href: URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], { type: "application/json" })),
+      download: `resume-analysis-${new Date().toISOString().slice(0, 10)}.json`,
+    });
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+  tb.append(copy, save);
+  out.append(tb);
+
+  /* ── hero ── */
+  const c = d.candidate || {};
+  const hero = el("div", "hero");
+  const eye = el("div", "eyebrow");
+  if (c.level) eye.append(el("span", "chip plain", c.level));
+  if (c.confidence) {
+    const ch = el("span", "chip " + (c.confidence === "High" ? "good" : c.confidence === "Medium" ? "warnc" : "bad"));
+    ch.append(el("span", "ico", "◆"), document.createTextNode(c.confidence + " confidence"));
+    eye.append(ch);
+  }
+  if (c.name) eye.append(el("span", "chip plain", c.name));
+  if (eye.children.length) hero.append(eye);
+  if (c.profile) hero.append(el("h2", "profile", c.profile));
+  if (c.verdict) hero.append(el("p", "verdict", c.verdict));
+  if (c.assumption) hero.append(el("p", "assume", c.assumption));
+  out.append(hero);
+
+  if (d.composite && d.composite.score != null) {
+    out.append(figure(d.composite.score, "Overall", d.composite.note));
+  }
+
+  /* ── scorecard ── */
+  if (d.scorecard?.length) {
+    const s = section("Scorecard", d.scorecard.length);
+    const bars = el("div", "bars");
+    d.scorecard.forEach((row, i) => {
+      const r = el("div", "brow " + band(row.score));
+      const k = el("div", "k", row.label);
+      if (row.why) k.append(el("small", null, row.why));
+      r.append(k, meter(row.score, i * 60), el("div", "v", num(row.score)));
+      bars.append(r);
+    });
+    s.append(bars);
+    out.append(s);
+  }
+
+  /* ── roles ── */
+  if (d.roles?.length) {
+    const s = section("Best-matching roles · ordered by evidence, not prestige", d.roles.length);
+    const g = el("div", "roles");
+    d.roles.forEach((r, i) => {
+      const card = el("article", "role " + band(r.score));
+      const top = el("div", "top");
+      top.append(el("h3", "title", r.title));
+      const n = el("div", "num");
+      n.append(el("b", null, num(r.score)), el("span", null, word(r.score) + (r.confidence ? " · " + r.confidence + " conf." : "")));
+      top.append(n);
+      card.append(top, meter(r.score, 200 + i * 90));
+      if (r.why) card.append(el("p", "why", r.why));
+      const cols = el("div", "cols");
+      for (const [h, items] of [["Evidence", r.evidence], ["Gaps", r.gaps], ["Interview topics", r.interview]]) {
+        if (!items?.length) continue;
+        const col = el("div");
+        col.append(el("h4", null, h), list(items));
+        cols.append(col);
+      }
+      if (cols.children.length) card.append(cols);
+      g.append(card);
+    });
+    s.append(g);
+    out.append(s);
+  }
+
+  /* ── skills ── */
+  if (d.skills?.length) {
+    const s = section("Skill matrix · proficiency 0–5, graded on evidence", d.skills.length);
+    const g = el("div", "skills");
+    for (const sk of d.skills) {
+      const p = Math.max(0, Math.min(5, num(sk.proficiency)));
+      const row = el("div", "skill " + (p >= 4 ? "good" : p >= 2 ? "warnc" : "bad"));
+      const n = el("div", "n");
+      n.append(el("b", null, sk.name));
+      const sub = [sk.evidence, sk.source].filter(Boolean).join(" · ");
+      if (sub) n.append(el("small", null, sub));
+      const dots = el("div", "dots");
+      dots.setAttribute("role", "img");
+      dots.setAttribute("aria-label", p + " out of 5");
+      for (let i = 0; i < 5; i++) dots.append(el("i", i < p ? "on" : null));
+      row.append(n, dots, el("div", "p", p));
+      g.append(row);
+    }
+    s.append(g);
+    out.append(s);
+  }
+
+  /* ── readiness ── */
+  if (d.readiness?.length) {
+    const s = section("Interview readiness", d.readiness.length);
+    const g = el("div", "ready");
+    for (const r of d.readiness) {
+      const [cls, ico] = LEVEL[r.level] || LEVEL.None;
+      const cell = el("div", "rcell");
+      const chip = el("span", "chip " + cls);
+      chip.append(el("span", "ico", ico), document.createTextNode(r.level));
+      cell.append(el("b", null, r.area), chip);
+      g.append(cell);
+    }
+    s.append(g);
+    out.append(s);
+  }
+
+  /* ── JD fit ── */
+  if (d.jd) {
+    const s = section("Job description fit", (d.jd.requirements || []).length || null);
+    if (d.jd.fit != null) s.append(figure(d.jd.fit, "Requirements met"));
+    if (d.jd.requirements?.length) {
+      const chips = el("div", "chips");
+      chips.style.marginTop = "28px";
+      for (const q of d.jd.requirements) {
+        const [cls, ico] = REQ[q.status] || REQ.UNCLEAR;
+        const chip = el("span", "chip big " + cls);
+        chip.append(el("span", "ico", ico), document.createTextNode(q.name));
+        if (q.note) chip.title = q.note;
+        chips.append(chip);
+      }
+      s.append(chips);
+    }
+    const cols = columns([["Blockers", d.jd.blockers], ["Highest-leverage edits for this JD", d.jd.edits]]);
+    if (cols.children.length) s.append(cols);
+    out.append(s);
+  }
+
+  /* ── ATS ── */
+  if (d.ats) {
+    const s = section("ATS compatibility");
+    s.append(figure(d.ats.score, "Machine readability"));
+    const cols = columns([["What's hurting it", d.ats.problems]]);
+    if (d.ats.missing?.length) {
+      const col = el("div");
+      col.append(el("h4", null, "Missing keywords"));
+      const chips = el("div", "chips");
+      for (const k of d.ats.missing) chips.append(el("span", "chip plain", k));
+      col.append(chips);
+      cols.append(col);
+    }
+    if (cols.children.length) s.append(cols);
+    out.append(s);
+  }
+
+  /* ── improvements ── */
+  if (d.improvements?.length) {
+    const s = section("Do these first · ranked by impact ÷ effort", d.improvements.length);
+    const g = el("div", "fixes");
+    for (const f of d.improvements) {
+      const card = el("div", "fix");
+      card.append(el("h4", null, f.problem));
+      if (f.why) card.append(el("p", "why", f.why));
+      if (f.fix) card.append(el("div", "do", f.fix));
+      if (f.benefit) card.append(el("p", "ben", "→ " + f.benefit));
+      g.append(card);
+    }
+    s.append(g);
+    out.append(s);
+  }
+
+  /* ── flags ── */
+  if (d.flags?.length) {
+    const s = section("Flags", d.flags.length);
+    const g = el("div", "flags");
+    for (const f of d.flags) {
+      const row = el("div", "flag");
+      row.append(el("span", "ico", "!"), el("span", null, f));
+      g.append(row);
+    }
+    s.append(g);
+    out.append(s);
+  }
+}
+</script>
+</body>
+</html>

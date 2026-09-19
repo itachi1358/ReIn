@@ -1,0 +1,154 @@
+{
+  "candidate": {
+    "name": "Jane Doe",
+    "level": "Student",
+    "profile": "Backend-focused full-stack engineer",
+    "verdict": "The resume demonstrates a solid internship where you built and optimized Node.js APIs with measurable latency reductions, a deployed full‑stack project serving hundreds of users, and strong algorithmic practice reflected by an 1800 LeetCode rating. Front‑end and cloud‑ops experience are only listed without proof.",
+    "confidence": "High",
+    "assumption": "Assumed the candidate targets entry‑level software engineering roles and no specific JD was provided."
+  },
+  "composite": {
+    "score": 73,
+    "note": "Balanced strengths in backend development and algorithmic skills, but limited evidence for frontend and cloud operations."
+  },
+  "scorecard": [
+    {
+      "label": "Technical Skills",
+      "score": 78,
+      "why": "Strong backend stack (Node.js, PostgreSQL, Redis) proven in internship; other skills only mentioned."
+    },
+    {
+      "label": "Relevant Experience",
+      "score": 85,
+      "why": "Internship includes quantified latency improvement for 12k daily users (Tier‑1 evidence)."
+    },
+    {
+      "label": "Projects",
+      "score": 70,
+      "why": "DocuChat deployed to 300 users, uses FastAPI and Postgres; no impact metrics beyond user count."
+    },
+    {
+      "label": "Problem‑Solving/DSA",
+      "score": 80,
+      "why": "LeetCode rating 1800 with 450 solved problems provides strong algorithmic evidence."
+    },
+    {
+      "label": "Education & Coursework",
+      "score": 68,
+      "why": "B.Tech CSE from NIT Trichy, CGPA 8.4; no coursework details provided."
+    },
+    {
+      "label": "Domain Knowledge",
+      "score": 62,
+      "why": "Backend and database knowledge evident; ML, cloud, and streaming (Kafka) only listed."
+    },
+    {
+      "label": "Achievements",
+      "score": 65,
+      "why": "Internship impact and LeetCode rating are notable; no awards or certifications."
+    }
+  ],
+  "roles": [
+    {
+      "title": "Backend Engineer",
+      "score": 80,
+      "confidence": "High",
+      "why": "Strong Node.js, PostgreSQL, Redis experience with measurable performance gains; deployed project shows production exposure.",
+      "evidence": [
+        "Internship: built REST APIs, cut p95 latency from 800 ms to 250 ms",
+        "DocuChat: FastAPI + Postgres backend serving 300 users",
+        "LeetCode 1800 rating"
+      ],
+      "gaps": [
+        "Limited cloud‑provider experience (AWS only mentioned)",
+        "No explicit on‑call or reliability work"
+      ],
+      "interview": [
+        "Explain caching strategy and latency measurement",
+        "Discuss schema design for PostgreSQL in DocuChat",
+        "Solve a medium‑level algorithm problem"
+      ]
+    },
+    {
+      "title": "Software Engineer (Node.js)",
+      "score": 78,
+      "confidence": "High",
+      "why": "Node.js usage is proven in a professional setting; PostgreSQL and Redis add depth; project shows end‑to‑end delivery.",
+      "evidence": [
+        "Internship: REST API development in Node.js",
+        "DocuChat backend in FastAPI (Python) but similar server‑side concepts",
+        "LeetCode rating"
+      ],
+      "gaps": [
+        "Front‑end stack (React) lacks demonstrated work",
+        "No CI/CD pipeline evidence"
+      ],
+      "interview": [
+        "Design a scalable API for a chat service",
+        "Write code to implement Redis caching layer",
+        "Discuss trade‑offs between SQL and NoSQL"
+      ]
+    },
+    {
+      "title": "Full‑Stack Engineer",
+      "score": 70,
+      "confidence": "Medium",
+      "why": "Back‑end is strong; front‑end (React) only listed without proof; project is backend‑heavy.",
+      "evidence": [
+        "Internship backend work",
+        "DocuChat backend deployment"
+      ],
+      "gaps": [
+        "No React implementation or UI metrics",
+        "No end‑to‑end feature ownership shown"
+      ],
+      "interview": [
+        "Build a simple React component that consumes the DocuChat API",
+        "Explain how you would structure a full‑stack project"
+      ]
+    },
+    {
+      "title": "DevOps Engineer (Entry‑level)",
+      "score": 55,
+      "confidence": "Low",
+      "why": "Docker, Kubernetes, Kafka are only mentioned; no operational responsibilities or metrics provided.",
+      "evidence": [
+        "Skills list includes Docker, Kubernetes, Kafka"
+      ],
+      "gaps": [
+        "No production deployment automation or monitoring experience",
+        "No on‑call or reliability incidents handled"
+      ],
+      "interview": [
+        "Describe how you would containerize the DocuChat service",
+        "Explain basic Kubernetes concepts"
+      ]
+    }
+  ],
+  "skills": [
+    { "name": "JavaScript", "proficiency": 4, "evidence": "Strong", "source": "Internship (Node.js APIs)" },
+    { "name": "Node.js", "proficiency": 4, "evidence": "Strong", "source": "Internship (REST APIs)" },
+    { "name": "React", "proficiency": 1, "evidence": "Mention-only", "source": "Skills section only" },
+    { "name": "Python", "proficiency": 4, "evidence": "Strong", "source": "DocuChat (FastAPI)" },
+    { "name": "PostgreSQL", "proficiency": 4, "evidence": "Strong", "source": "Internship & DocuChat" },
+    { "name": "Redis", "proficiency": 4, "evidence": "Strong", "source": "Internship caching" },
+    { "name": "Docker", "proficiency": 1, "evidence": "Mention-only", "source": "Skills section only" },
+    { "name": "AWS", "proficiency": 1, "evidence": "Mention-only", "source": "Skills section only" },
+    { "name": "Kubernetes", "proficiency": 1, "evidence": "Mention-only", "source": "Skills section only" },
+    { "name": "Kafka", "proficiency": 1, "evidence": "Mention-only", "source": "Skills section only" },
+    { "name": "Machine Learning", "proficiency": 2, "evidence": "Inferred", "source": "DocuChat RAG description" },
+    { "name": "Algorithms / DSA", "proficiency": 4, "evidence": "Strong", "source": "LeetCode 1800 rating, 450 solved" }
+  ],
+  "readiness": [
+    { "area": "Backend Development", "level": "Strong" },
+    { "area": "Frontend Development", "level": "Limited" },
+    { "area": "Databases", "level": "Strong" },
+    { "area": "Cloud Platforms", "level": "Limited" },
+    { "area": "DevOps / CI‑CD", "level": "Limited" },
+    { "area": "Machine Learning / AI", "level": "Limited" },
+    { "area": "Data Structures & Algorithms", "level": "Strong" }
+  ],
+  "ats": {
+    "score": 82,
+    "problems": [
+      "Contact line mixes email and GitHub without clear labels
