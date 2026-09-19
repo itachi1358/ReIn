@@ -267,7 +267,8 @@ const MAX = 10 * 1024 * 1024;
 const state = { mode: "standard" };
 let loaded = false;
 
-const fileInput = Object.assign(document.createElement("input"), { type: "file", accept: ".pdf,.txt,.md" });
+// hidden here rather than in CSS — it is created in JS, so its visibility lives with it
+const fileInput = Object.assign(document.createElement("input"), { type: "file", accept: ".pdf,.txt,.md", hidden: true });
 document.body.append(fileInput);
 
 const err = (m) => { $("#err").textContent = m || ""; };
